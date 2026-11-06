@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0e6f7a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="海联">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>海联 Hailian</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: messagerie à deux volets (contacts à gauche, conversation à droite), un seul volet sur téléphone */
+:root{
+  --bg:#e9eff1; --surface:#ffffff; --surface-2:#f3f6f7; --fg:#142127; --muted:#5b6d75; --line:#d7e0e4;
+  --accent:#0e6f7a; --accent-fg:#ffffff;
+  --bubble-me:#0e6f7a; --bubble-me-fg:#ffffff; --bubble-them:#e6ecef; --bubble-them-fg:#142127;
+  --online:#2a9d57; --offline:#9aa8ae; --alert:#d4533a;
+  --banner:#fff1c7; --banner-fg:#5a4300;
+  --av-bg-l:88%; --av-fg-l:30%;
+  --font-display:'Bricolage Grotesque',system-ui,sans-serif;
+  --font-body:'IBM Plex Sans',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1519; --surface:#131f25; --surface-2:#192830; --fg:#e4edf0; --muted:#91a5ad; --line:#26373f;
+    --accent:#3bb0bd; --accent-fg:#06161a;
+    --bubble-me:#16707b; --bubble-me-fg:#ffffff; --bubble-them:#1d2f37; --bubble-them-fg:#e4edf0;
+    --online:#46c279; --offline:#6d7f87; --alert:#ee7d66;
+    --banner:#3a2f0b; --banner-fg:#f3deaa;
+    --av-bg-l:24%; --av-fg-l:82%;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1519; --surface:#131f25; --surface-2:#192830; --fg:#e4edf0; --muted:#91a5ad; --line:#26373f;
+  --accent:#3bb0bd; --accent-fg:#06161a;
+  --bubble-me:#16707b; --bubble-me-fg:#ffffff; --bubble-them:#1d2f37; --bubble-them-fg:#e4edf0;
+  --online:#46c279; --offline:#6d7f87; --alert:#ee7d66;
+  --banner:#3a2f0b; --banner-fg:#f3deaa;
+  --av-bg-l:24%; --av-fg-l:82%;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:14px;line-height:1.45;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.shell{height:100%;max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:10px;min-height:0}
+.banner{background:var(--banner);color:var(--banner-fg);border-radius:999px;padding:3px 12px;font-size:11.5px;display:inline-flex;gap:8px;align-items:center;align-self:flex-end;max-width:100%}
+.banner b{letter-spacing:.08em;text-transform:uppercase;font-size:11px}
+.app{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+
+.side{display:flex;flex-direction:column;min-width:0;min-height:0;border-right:1px solid var(--line)}
+.brand-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 14px 8px}
+.brand{font-family:var(--font-display);font-weight:700;font-size:22px;letter-spacing:-.01em;display:flex;align-items:center;gap:9px;min-width:0}
+.logo{width:32px;height:32px;flex:none}
+.brand small{font-family:var(--font-body);font-weight:500;font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-left:6px}
+.me{padding:0 14px 10px;display:grid;gap:8px}
+.me label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+.me-row{display:flex;gap:8px;min-width:0}
+.me select{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:7px 8px}
+.pill-btn{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:6px 12px;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.pill-btn:hover{border-color:var(--accent)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--offline);flex:none}
+.dot.online{background:var(--online)}
+.tabs{display:flex;gap:6px;padding:4px 14px 10px}
+.tab{border:1px solid var(--line);background:transparent;border-radius:999px;padding:4px 11px;font-size:12.5px;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-fg)}
+.list{flex:1;overflow-y:auto;min-height:0;border-top:1px solid var(--line)}
+.item{width:100%;text-align:left;border:0;background:transparent;display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.item:hover{background:var(--surface-2)}
+.item[aria-current="true"]{background:var(--surface-2);box-shadow:inset 3px 0 0 var(--accent)}
+.av{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;font-weight:600;font-size:14px;position:relative;
+  background:hsl(var(--h) 35% var(--av-bg-l));color:hsl(var(--h) 45% var(--av-fg-l))}
+.av .dot{position:absolute;right:-1px;bottom:-1px;border:2px solid var(--surface);width:12px;height:12px}
+.item .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .sub{color:var(--muted);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .meta{display:grid;justify-items:end;gap:4px;font-size:11.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.badge{background:var(--alert);color:#fff;border-radius:999px;min-width:19px;height:19px;padding:0 6px;display:grid;place-items:center;font-size:11px;font-weight:600}
+.empty-list{padding:24px 16px;color:var(--muted)}
+
+.thread{display:flex;flex-direction:column;min-width:0;min-height:0;background:var(--surface)}
+.t-head{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);min-width:0}
+.t-head .who{flex:1;min-width:0}
+.t-head .who b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-head .who span{font-size:12.5px;color:var(--muted)}
+.back{display:none;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:6px 10px}
+.msgs{flex:1;min-height:0;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:6px;background:var(--surface)}
+.msg{max-width:min(78%,520px);padding:8px 11px;border-radius:14px;overflow-wrap:anywhere}
+.msg.them{background:var(--bubble-them);color:var(--bubble-them-fg);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.me{background:var(--bubble-me);color:var(--bubble-me-fg);align-self:flex-end;border-bottom-right-radius:4px}
+.msg .foot{display:flex;gap:6px;justify-content:flex-end;font-size:11px;opacity:.78;margin-top:2px;font-variant-numeric:tabular-nums}
+.sys{align-self:center;font-size:12px;color:var(--muted);background:var(--surface-2);border-radius:999px;padding:3px 12px;margin:6px 0}
+.typing{align-self:flex-start;color:var(--muted);font-size:12.5px;padding:2px 4px}
+.hint{padding:7px 14px;font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);background:var(--surface-2)}
+.hint[hidden]{display:none}
+.composer{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line)}
+.composer input{flex:1;min-width:0;background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:9px 14px}
+.send{border:0;background:var(--accent);color:var(--accent-fg);border-radius:999px;padding:9px 18px;font-weight:600}
+.send:disabled{opacity:.5;cursor:not-allowed}
+.placeholder{flex:1;display:grid;place-items:center;text-align:center;color:var(--muted);padding:24px}
+.placeholder h2{font-family:var(--font-display);font-size:22px;color:var(--fg);margin:0 0 6px}
+
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .shell[data-view="list"] .thread{display:none}
+  .shell[data-view="thread"] .side{display:none}
+  .back{display:inline-block}
+  .side{border-right:0}
+  .msg{max-width:88%}
+  .sim-label{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<style>html,body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<div class="shell" id="shell" data-view="list">
+  <div class="banner"><b>Prototype</b><span>Fictional accounts and messages</span></div>
+  <div class="app">
+    <aside class="side">
+      <div class="brand-row">
+        <div class="brand"><svg class="logo" viewBox="0 0 32 32" role="img" aria-label="Hailian logo"><rect width="32" height="32" rx="9" style="fill:var(--accent)"/><path d="M6 13c3-4 5-4 8 0s5 4 8 0 3-3 4-2" fill="none" stroke-width="2.4" stroke-linecap="round" style="stroke:var(--accent-fg)"/><path d="M6 21c3-4 5-4 8 0s5 4 8 0 3-3 4-2" fill="none" stroke-width="2.4" stroke-linecap="round" style="stroke:var(--accent-fg);opacity:.6"/></svg><span>海联</span><small>Hailian · Messaging</small></div>
+      </div>
+      <div class="me">
+        <label for="acct">Signed-in account</label>
+        <div class="me-row">
+          <select id="acct"></select>
+          <button class="pill-btn" id="myStatus" type="button"></button>
+        </div>
+      </div>
+      <div class="tabs" role="group" aria-label="Filter contacts">
+        <button class="tab" data-f="all" aria-pressed="true" type="button">All</button>
+        <button class="tab" data-f="online" aria-pressed="false" type="button">Online</button>
+        <button class="tab" data-f="offline" aria-pressed="false" type="button">Offline</button>
+      </div>
+      <div class="list" id="list"></div>
+    </aside>
+    <section class="thread" id="thread">
+      <div class="t-head" id="head" hidden></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="hint" id="hint" hidden></div>
+      <form class="composer" id="composer" autocomplete="off" hidden>
+        <input id="text" type="text" placeholder="Write a message" aria-label="Message">
+        <button class="send" type="submit">Send</button>
+      </form>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  var users=[
+    {id:'u1',name:'Cheikh',role:'',status:'online',seen:'',h:190},
+    {id:'u7',name:'哈里',role:'Manager (Harry)',status:'offline',seen:'08:32',h:210},
+    {id:'u3',name:'王芳',role:'Accounting',status:'offline',seen:'yesterday 18:40',h:330},
+    {id:'u4',name:'陈明',role:'Dock supervisor',status:'offline',seen:'07:55',h:140},
+    {id:'u6',name:'李伟',role:'Purchasing',status:'offline',seen:'3 h ago',h:50}
+  ];
+  var me='u1', active=null, filter='all';
+  var convos={}, unread={}, typingIn={};
+
+  var replies=[
+    'Got it, I’m looking into it right now.',
+    'Okay, I’ll confirm before the end of the day.',
+    'Thanks for the update. Can you send me the details?',
+    'Noted. Let’s talk again tomorrow morning at the dock.',
+    'Fine by me. I’ll let the team know.',
+    'Perfect, I’ll update the file.'
+  ];
+
+  function $(id){return document.getElementById(id)}
+  function byId(id){for(var i=0;i<users.length;i++){if(users[i].id===id)return users[i]}}
+  function key(a,b){return [a,b].sort().join('-')}
+  function now(){return new Date().toTimeString().slice(0,5)}
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function initials(n){return n.split(' ').map(function(w){return w[0]}).slice(0,2).join('').toUpperCase()}
+  function statusText(u){return u.status==='online'?'Online':'Offline · last seen '+u.seen}
+  function avatar(u){return '<div class="av" style="--h:'+u.h+'">'+esc(initials(u.name))+'<span class="dot '+(u.status==='online'?'online':'')+'"></span></div>'}
+
+  function seed(){
+    function m(from,text,time){return {from:from,text:text,time:time,state:'read'}}
+    convos[key('u1','u3')]=[
+      m('u1','Morning! Could you check the supplier invoice from last week before Friday?','yesterday 09:10'),
+      m('u3','Sure. Which one, the cold storage invoice or the packaging one?','yesterday 09:26'),
+      m('u1','The cold storage one. The total looks higher than the quote.','yesterday 09:31'),
+      m('u3','You’re right, there’s an extra handling fee. I’ll ask them to explain it.','yesterday 11:02'),
+      m('u1','Thanks, keep me posted.','yesterday 11:05'),
+      m('u3','I called them. They’ll send a corrected invoice tomorrow morning.','yesterday 17:48'),
+      m('u1','Perfect, please file it once it arrives.','yesterday 17:52'),
+      m('u3','Will do. Have a good evening!','yesterday 18:38')
+    ];
+    convos[key('u1','u4')]=[
+      m('u4','Good morning Cheikh. The morning crew is on site, 6 people.','07:20'),
+      m('u1','Great. Are the pallets for today already labeled?','07:28'),
+      m('u4','Almost. We’re finishing the last two now.','07:33'),
+      m('u1','OK, send me a photo when everything is ready.','07:36'),
+      m('u4','Will do. I also need two more pallet jacks for the afternoon.','07:44'),
+      m('u1','I’ll ask purchasing to arrange it today.','07:50'),
+      m('u4','Thanks, I’ll be at the dock until 15:00.','07:55')
+    ];
+    convos[key('u1','u6')]=[
+      m('u1','Do we have an update on the ice supplier quote?','yesterday 14:20'),
+      m('u6','Two quotes so far. The second one is about 6% cheaper.','yesterday 15:02'),
+      m('u1','Can you send both in one comparison table?','yesterday 15:10'),
+      m('u6','Sure, I’ll have it ready tomorrow.','yesterday 15:12'),
+      m('u6','Quotes and comparison table attached, let me know what you think.','3 h ago'),
+      m('u6','Also, the supplier needs an answer by Monday.','3 h ago')
+    ];
+    convos[key('u1','u7')]=[
+      m('u7','Cheikh, do you have a minute for a quick call this afternoon?','08:05'),
+      m('u1','Yes, anytime after 14:00.','08:12'),
+      m('u7','Great, I’ll call at 14:30. I want to go over the weekly summary.','08:15'),
+      m('u1','Perfect. I’ll prepare the numbers before then.','08:20'),
+      m('u7','Thanks. Also, please share the updated team schedule.','08:30')
+    ];
+    unread['u1:u4']=1; unread['u1:u6']=2; unread['u1:u7']=1;
+  }
+
+  function lastOf(a,b){
+    var c=convos[key(a,b)]||[];
+    for(var i=c.length-1;i>=0;i--){if(!c[i].system)return c[i]}
+    return null;
+  }
+
+  function renderTop(){
+    var sel=$('acct'); sel.innerHTML='';
+    var meU=byId(me), o=document.createElement('option');
+    o.value=meU.id; o.textContent=meU.name+(meU.role?' · '+meU.role:''); o.selected=true;
+    sel.appendChild(o); sel.disabled=true;
+    var m=byId(me);
+    $('myStatus').innerHTML='<span class="dot '+(m.status==='online'?'online':'')+'"></span>'+(m.status==='online'?'Online':'Offline');
+    $('myStatus').setAttribute('aria-label','My status: '+(m.status==='online'?'online':'offline')+'. Click to change.');
+  }
+
+  function renderList(){
+    var list=$('list');
+    var contacts=users.filter(function(u){return u.id!==me}).filter(function(u){return filter==='all'||u.status===filter});
+    contacts.sort(function(a,b){
+      if(a.status!==b.status)return a.status==='online'?-1:1;
+      return a.name.localeCompare(b.name,'fr');
+    });
+    if(!contacts.length){list.innerHTML='<div class="empty-list">No contacts in this view.</div>';return}
+    list.innerHTML=contacts.map(function(u){
+      var l=lastOf(me,u.id), n=unread[me+':'+u.id]||0;
+      var prev=l?(l.from===me?'You: ':'')+l.text:statusText(u);
+      return '<button class="item" type="button" data-id="'+u.id+'"'+(u.id===active?' aria-current="true"':'')+'>'+
+        avatar(u)+
+        '<div style="min-width:0"><div class="name">'+esc(u.name)+'</div><div class="sub">'+esc(prev)+'</div></div>'+
+        '<div class="meta"><span>'+(l?esc(l.time.replace('yesterday ','').replace(' ago','')):'')+'</span>'+(n?'<span class="badge">'+n+'</span>':'')+'</div>'+
+      '</button>';
+    }).join('');
+  }
+
+  function stateLabel(m){
+    if(m.state==='queued')return 'Pending';
+    if(m.state==='sent')return '✓';
+    if(m.state==='delivered')return '✓✓';
+    return '✓✓ Read';
+  }
+
+  function renderThread(scroll){
+    var head=$('head'), msgs=$('msgs'), comp=$('composer'), hint=$('hint');
+    if(!active){
+      head.hidden=true; comp.hidden=true; hint.hidden=true;
+      msgs.innerHTML='<div class="placeholder"><div><h2>Choose a conversation</h2><p>Online contacts reply. Offline contacts receive your messages when they reconnect.</p></div></div>';
+      return;
+    }
+    var c=byId(active), m=byId(me), k=key(me,active);
+    head.hidden=false; comp.hidden=false;
+    head.innerHTML='<button class="back" type="button" id="back">← Back</button>'+avatar(c)+
+      '<div class="who"><b>'+esc(c.name)+'</b><span>'+esc(c.role)+' · '+esc(statusText(c))+'</span></div>'+
+      '<button class="pill-btn" type="button" id="simBtn"><span class="dot '+(c.status==='online'?'online':'')+'"></span><span class="sim-label">Simulate: </span>'+(c.status==='online'?'go offline':'go online')+'</button>';
+    var arr=convos[k]||[];
+    var html=arr.map(function(x){
+      if(x.system)return '<div class="sys">'+esc(x.text)+'</div>';
+      var mine=x.from===me;
+      return '<div class="msg '+(mine?'me':'them')+'"><div>'+esc(x.text)+'</div><div class="foot"><span>'+esc(x.time)+'</span>'+(mine?'<span>'+stateLabel(x)+'</span>':'')+'</div></div>';
+    }).join('');
+    if(typingIn[k]===active)html+='<div class="typing">'+esc(c.name.split(' ')[0])+' is typing…</div>';
+    msgs.innerHTML=html;
+    if(scroll!==false)msgs.scrollTop=msgs.scrollHeight;
+    if(m.status!=='online'){hint.hidden=false;hint.textContent='You are offline. Your messages will be sent when you reconnect.'}
+    else if(c.status!=='online'){hint.hidden=false;hint.textContent=c.name+' is offline. The message will be delivered when they reconnect.'}
+    else hint.hidden=true;
+  }
+
+  function renderAll(){renderTop();renderList();renderThread()}
+
+  function openConvo(id){
+    active=id; unread[me+':'+id]=0;
+    $('shell').setAttribute('data-view','thread');
+    renderList(); renderThread();
+  }
+
+  function scheduleReply(fromId,toId){
+    var k=key(fromId,toId);
+    setTimeout(function(){
+      typingIn[k]=fromId; if(me===toId&&active===fromId)renderThread();
+    },900);
+    setTimeout(function(){
+      var from=byId(fromId); typingIn[k]=null;
+      if(from.status!=='online'){if(me===toId&&active===fromId)renderThread();return}
+      var arr=convos[k]||(convos[k]=[]);
+      arr.forEach(function(x){if(x.from===toId&&x.state!=='queued')x.state='read'});
+      arr.push({from:fromId,text:replies[Math.floor(Math.random()*replies.length)],time:now(),state:'read'});
+      if(!(me===toId&&active===fromId)){var uk=toId+':'+fromId;unread[uk]=(unread[uk]||0)+1}
+      renderList(); if(me===toId&&active===fromId)renderThread();
+    },2200+Math.random()*1200);
+  }
+
+  function send(text){
+    text=text.trim(); if(!text||!active)return;
+    var k=key(me,active), arr=convos[k]||(convos[k]=[]);
+    var c=byId(active), m=byId(me);
+    var live=m.status==='online'&&c.status==='online';
+    var msg={from:me,text:text,time:now(),state:live?'sent':'queued'};
+    arr.push(msg); renderList(); renderThread();
+    if(live){
+      var to=me, cid=active;
+      setTimeout(function(){if(msg.state==='sent'){msg.state='delivered';if(me===to&&active===cid)renderThread(false)}},500);
+      scheduleReply(cid,me);
+    }
+  }
+
+  function flush(a,b){
+    var arr=convos[key(a,b)]||[], A=byId(a), B=byId(b), moved=false;
+    if(A.status!=='online'||B.status!=='online')return false;
+    arr.forEach(function(x){if(x.state==='queued'&&!x.system){x.state='delivered';moved=true}});
+    return moved;
+  }
+
+  function sys(a,b,text){(convos[key(a,b)]||(convos[key(a,b)]=[])).push({system:true,text:text,time:now()})}
+
+  function toggleMe(){
+    var m=byId(me);
+    if(m.status==='online'){m.status='offline';m.seen=now()}
+    else{
+      m.status='online';
+      users.forEach(function(u){
+        if(u.id!==me&&flush(me,u.id)){scheduleReply(u.id,me)}
+      });
+    }
+    renderAll();
+  }
+
+  function toggleContact(){
+    var c=byId(active); if(!c)return;
+    if(c.status==='online'){
+      c.status='offline';c.seen=now();
+      sys(me,c.id,c.name.split(' ')[0]+' went offline');
+    }else{
+      c.status='online';
+      sys(me,c.id,c.name.split(' ')[0]+' just came online');
+      if(flush(me,c.id))scheduleReply(c.id,me);
+    }
+    renderAll();
+  }
+
+  $('list').addEventListener('click',function(e){
+    var b=e.target.closest('.item'); if(b)openConvo(b.getAttribute('data-id'));
+  });
+  document.querySelector('.tabs').addEventListener('click',function(e){
+    var t=e.target.closest('.tab'); if(!t)return;
+    filter=t.getAttribute('data-f');
+    document.querySelectorAll('.tab').forEach(function(x){x.setAttribute('aria-pressed',x===t?'true':'false')});
+    renderList();
+  });
+  $('acct').addEventListener('change',function(e){
+    me=e.target.value; active=null; $('shell').setAttribute('data-view','list'); renderAll();
+  });
+  $('myStatus').addEventListener('click',toggleMe);
+  $('head').addEventListener('click',function(e){
+    if(e.target.closest('#back')){active=null;$('shell').setAttribute('data-view','list');renderAll();return}
+    if(e.target.closest('#simBtn'))toggleContact();
+  });
+  $('composer').addEventListener('submit',function(e){
+    e.preventDefault();
+    var i=$('text'); send(i.value); i.value=''; i.focus();
+  });
+
+  seed(); renderAll();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
+</script>
+</body>
+</html>
